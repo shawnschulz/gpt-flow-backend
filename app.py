@@ -25,9 +25,8 @@ def schema_json_handler():
     #get requests to those URLs, check some variable signifying whether the output is ready or not
     Path('./json_database/temp_schema.json').touch()
     with open('./json_database/temp_schema.json', "w") as outfile:
-        js.dump(schema, outfile)
-    return '''
-              Schema is {}'''.format(schema)
+        js.dump(promptData, outfile)
+    return ask_lora(promptData)
 @app.route('/<user_id>/chatbot/response', methods=['POST'])
 
 def chatbot_post():
