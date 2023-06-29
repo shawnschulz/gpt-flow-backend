@@ -3,18 +3,40 @@ from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS #comment this on deployment
 from api.HelloApiHandler import HelloApiHandler
 from flask import request
+from chatbot_controller import *
+import json as js
+from pathlib import Path
+
 
 app = Flask(__name__)
 
 #app = Flask(__name__, static_url_path='', static_folder='frontend/build')
 CORS(app) #comment on deploy
 #api = Api(app)
-@app.route('/json', methods=['POST'])
-def json():
+@app.route('/schema_json_handler', methods=['POST'])
+def schema_json_handler():
     request_data = request.get_json()
-    nodes = request_data['nodes']
+    promptData = request_data
+    #it's working! 
+    print(promptData)
+    #all we really need to do next is run this through the python script already made, then somehow send it back to
+    #the react server to display with a GET method. i'm thinking we just include aspects of the schema script in the
+    #api backend. we should write the outputs of the schema to somewhere in the url, and have the front end send
+    #get requests to those URLs, check some variable signifying whether the output is ready or not
+    Path('./json_database/temp_schema.json').touch()
+    with open('./json_database/temp_schema.json', "w") as outfile:
+        js.dump(schema, outfile)
     return '''
-              Nodes is {}'''.format(nodes)
+              Schema is {}'''.format(schema)
+@app.route('/<user_id>/chatbot/response', methods=['POST'])
+
+def chatbot_post():
+    if flask.request.method == 'POST':
+        chatbot_prompt = request.args.get('chatbot_prompt')
+        return(ask_lora(chatbot_prompt))
+
+#@app.route('/<user_id>/chatbot/response', methods=['GET'])
+        
 # @app.route("/users/<user_id>", defaults={'path':''}, methods = ['GET', 'POST'])
 # def user(user_id):
 #     if request.method == 'GET':

@@ -14,7 +14,9 @@ class HelloApiHandler(Resource):
     '''
       Does something to get the chatbot output when prompted just by the chatbot on Lilum Flow
     '''
+
   def post(self):
+    
     return {
       'resultStatus': 'SUCCESS',
       'message': "You just posted cringe"
