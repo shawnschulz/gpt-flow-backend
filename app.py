@@ -3,10 +3,13 @@ from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS #comment this on deployment
 from api.HelloApiHandler import HelloApiHandler
 from flask import request
-from chatbot_controller import *
+#from chatbot_controller import *
 import json as js
 from pathlib import Path
-
+from optparse import OptionParser
+import sys
+import json
+from llama_cpp import Llama
 
 app = Flask(__name__)
 
@@ -23,11 +26,28 @@ def schema_json_handler():
     #the react server to display with a GET method. i'm thinking we just include aspects of the schema script in the
     #api backend. we should write the outputs of the schema to somewhere in the url, and have the front end send
     #get requests to those URLs, check some variable signifying whether the output is ready or not
-    Path('./json_database/temp_schema.json').touch()
-    with open('./json_database/temp_schema.json', "w") as outfile:
-        js.dump(promptData, outfile)
+
+##This was my attempt at doing a json database earlier lol, just ignore this for now
+#    Path('./json_database/temp_schema.json').touch()
+#    with open('./json_database/temp_schema.json', "w") as outfile:
+#        js.dump(promptData, outfile)
     return ask_lora(promptData)
 @app.route('/<user_id>/chatbot/response', methods=['POST'])
+
+
+## Desktop model path
+#path_to_model= path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
+
+def ask_lora(prompt, model_path="/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" ):
+    llm = Llama(model_path=model_path)
+#   contextual_prompt = contents + "\n The previous text was just context and is your memory, do not answer anything enclosed in []. Please answer the following question only Q: " + prompt           
+    output = llm("Q: " + prompt + " A:", max_tokens=32, stop=["Q:", "\n"], echo=True)
+    #save additional context
+    #save the model again (this could either be extremely important or useless idk lol)
+    #f2 = open(memory_dir + 'dataset.json', 'r+b')
+    #f2.write(bytes(str(output), 'utf-8'))
+    print(output) 
+    return(output)
 
 def chatbot_post():
     if flask.request.method == 'POST':
