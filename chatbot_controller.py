@@ -10,7 +10,7 @@ from llama_cpp import Llama
 #pc server model path "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
 
 
-def ask_lora(prompt):
+def ask_alpaca(prompt):
     path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-q4_0.bin" 
     llm = Llama(model_path=path_to_model)
     output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=200, echo=True)

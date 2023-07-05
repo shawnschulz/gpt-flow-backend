@@ -31,14 +31,14 @@ def schema_json_handler():
 #    Path('./json_database/temp_schema.json').touch()
 #    with open('./json_database/temp_schema.json', "w") as outfile:
 #        js.dump(promptData, outfile)
-    return ask_lora(promptData)
+    return ask_alpaca(promptData)
 @app.route('/<user_id>/chatbot/response', methods=['POST'])
 
 
 ## Desktop model path
 #path_to_model= path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
 
-def ask_lora(prompt, model_path="/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" ):
+def ask_alpaca(prompt, model_path="/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" ):
     llm = Llama(model_path=model_path)
 #   contextual_prompt = contents + "\n The previous text was just context and is your memory, do not answer anything enclosed in []. Please answer the following question only Q: " + prompt           
     output = llm("Q: " + prompt + " A:", max_tokens=32, stop=["Q:", "\n"], echo=True)
