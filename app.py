@@ -36,9 +36,14 @@ def schema_json_handler():
 
 
 ## Desktop model path
-#path_to_model= path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
+#path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
 
-def ask_alpaca(prompt, model_path="/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" ):
+## Laptop model path
+
+#path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-q4_0.bin"
+
+
+def ask_alpaca(prompt, model_path="/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-f16.bin" ):
     llm = Llama(model_path=model_path)
 #   contextual_prompt = contents + "\n The previous text was just context and is your memory, do not answer anything enclosed in []. Please answer the following question only Q: " + prompt           
     output = llm("Q: " + prompt + " A:", max_tokens=32, stop=["Q:", "\n"], echo=True)
@@ -47,7 +52,7 @@ def ask_alpaca(prompt, model_path="/home/shawn/Programming/ai_stuff/llama.cpp/mo
     #f2 = open(memory_dir + 'dataset.json', 'r+b')
     #f2.write(bytes(str(output), 'utf-8'))
     print(output) 
-    return(output)
+    return(output["choices"][0]["text"].split("A: ",1)[1])
 
 def chatbot_post():
     if flask.request.method == 'POST':
