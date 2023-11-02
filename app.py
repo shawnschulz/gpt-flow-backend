@@ -48,7 +48,7 @@ def ask_alpaca(prompt, model_path="/Users/shawnschulz/Programming/llama.cpp/mode
     llm = Llama(model_path=model_path)
     prompt_string = prompt["Instruction"]
 #   contextual_prompt = contents + "\n The previous text was just context and is your memory, do not answer anything enclosed in []. Please answer the following question only Q: " + prompt           
-    output = llm("Q: " + prompt_string + " A:", max_tokens=8, stop=["Q:", "\n"], echo=True)
+    output = llm("Q: " + prompt_string + " A:", max_tokens=1, stop=["Q:", "\n"], echo=True)
     #save additional context
     #save the model again (this could either be extremely important or useless idk lol)
     #f2 = open(memory_dir + 'dataset.json', 'r+b')
@@ -56,7 +56,9 @@ def ask_alpaca(prompt, model_path="/Users/shawnschulz/Programming/llama.cpp/mode
     print(output) 
     return_text = output["choices"][0]["text"].split("A: ",1)[1]
     print(return_text)
-    return(return_text)
+    return_dict = {}
+    return_dict["Response"] = return_text
+    return(output)
 
 def chatbot_post():
     if flask.request.method == 'POST':
