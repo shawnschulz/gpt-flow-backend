@@ -33,7 +33,7 @@ def schema_json_handler():
 #    Path('./json_database/temp_schema.json').touch()
 #    with open('./json_database/temp_schema.json', "w") as outfile:
 #        js.dump(promptData, outfile)
-    return ask_alpaca(promptData)
+    return runSchema(promptData)
 @app.route('/<user_id>/chatbot/response', methods=['POST'])
 
 

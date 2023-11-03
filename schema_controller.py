@@ -259,6 +259,16 @@ def retrieveNodePrompt(node_id, schema_dictionary):
         if node['id'] == node_id:
             return(node['data']['prompt'])
 
+def addReturnElementsToSchemaDictionary(schema_dictionary, labelled_output, context_dict):
+        if "return_structure" in schema_dictionary and "context_dict" in schema_dictionary:
+            schema_dictionary["return_structure"] += labelled_output
+            schema_dictionary["context_dicts"] += context_dict
+        else:
+            schema_dictionary["return_structure"] = []
+            schema_dictionary["context_dicts"] = []
+            schema_dictionary["return_structure"] += labelled_output
+            schema_dictionary["context_dicts"] += context_dict
+        return schema_dictionary
 # %%
 def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="", diverging_loop_stack=[], seen_nodes=[], context_dict = {}):
     '''
@@ -290,9 +300,12 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
         the LLM answers the prompt inputted into the box and not questions received as context,
         but this is not preferred.
         For bonus points, add an option to use dfs or bfs
+
+        UPDATE: have to update to return some whole structure with a series of outputs that can be used by frontend to 
+        populate chatbot output box, thinking we can just add it to the schema dict and return
     '''
     ### Should listen here to see if user hit the pause/stop button, and if they did pause or stop the execution of the code
-    listenForInput()
+    #listenForInput()
 
     roots = findRoots(schema_dictionary)
     nodes_to_send_outputs={}
@@ -402,9 +415,17 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
                     print("printing the new seen nodes")
                     print(new_seen_nodes)
             output, context_dict = runNodeLLM(root, next_schema_dictionary, context_dict=context_dict)
+            labelled_output = root + ": " + output
+            if "return_structure" in next_schema_dictionary and "context_dict" in next_schema_dictionary:
+                next_schema_dictionary["return_structure"] += labelled_output
+                next_schema_dictionary["context_dicts"] += context_dict
+            else:
+                next_schema_dictionary["return_structure"] = []
+                next_schema_dictionary["context_dicts"] = []
+                next_schema_dictionary["return_structure"] += labelled_output
+                next_schema_dictionary["context_dicts"] += context_dict
+
             new_seen_nodes.append(root)
-            ### SEND OUTPUT TO CHATBOT TO OUTPUT HERE ####
-            outputToChatbot(output)
 
             for node_id in nodes_to_send_outputs.keys():
                 nodes_to_send_outputs[node_id] = output
