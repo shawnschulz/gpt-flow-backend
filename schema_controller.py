@@ -10,10 +10,6 @@ from llama_cpp import Llama
 #only thing left to do is receive this json file as an input from the server and make sure
 #running the LLM works :), will eventually want to add some other options for LLMs to run
 #and also listen for that input.
-json_path="/home/shawn/Downloads/lotr.json"
-
-with open(json_path) as json_file:
-    schema_dictionary = json.load(json_file)
 
 def ask_lora(prompt):
     path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
@@ -437,4 +433,3 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
         return(runSchema(next_schema_dictionary, seen_nodes=new_seen_nodes, context_dict=context_dict))
 
 # %%
-runSchema(schema_dictionary)
