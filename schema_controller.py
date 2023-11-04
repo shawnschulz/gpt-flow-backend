@@ -16,7 +16,7 @@ from llama_cpp import Llama
 def ask_lora(prompt):
     path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-f16.bin" 
     llm = Llama(model_path=path_to_model)
-    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=3, echo=True)
+    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=1, echo=True)
     print("DEBUG: the output of ask-lora before subsetting is:")
     print(output)
     response = output["choices"][0]["text"].split("Output: ",1)[1]
@@ -268,7 +268,7 @@ def addReturnElementsToSchemaDictionary(schema_dictionary, labelled_output, cont
             schema_dictionary["context_dicts"] += context_dict
         return schema_dictionary
 # %%
-def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="", diverging_loop_stack=[], seen_nodes=[], context_dict = {}):
+def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="", diverging_loop_stack=[], seen_nodes=[], context_dict = {}, return_dict = {"output_text":[], "context_dicts":[]}):
     '''
         Take a schema and run the flow. Mutates schema dictionary and removes edges not part of a loop, edges within or downstream of loops are
         preserved.
@@ -314,13 +314,13 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
     #Base case: Check if schema dictionary has no roots
     if len(roots) == 0 and len(orphaned_nodes) == 0 and len(schema_dictionary['edges']) == 0:
         print("No roots, orphaned nodes or edges. Exiting.")
-        return(schema_dictionary) 
+        return(return_dict) 
     if len(roots) == 0 and len(orphaned_nodes) == 0:
         print("We are doing the loop case.")
         print("Here's the node we're doing:")
         print(next_node_in_loop)
         if not schema_dictionary['edges']:
-            return(schema_dictionary)
+            return(return_dict)
         # Other special case: we are looping 
         #this doesn't work, should make a function that follows the targets and returns False if ends up at a terminal branch and True if it 
         #comes back to itself
@@ -413,16 +413,10 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
                     print("printing the new seen nodes")
                     print(new_seen_nodes)
             output, context_dict = runNodeLLM(root, next_schema_dictionary, context_dict=context_dict)
-            labelled_output = root + ": " + output
-            if "return_structure" in next_schema_dictionary and "context_dict" in next_schema_dictionary:
-                next_schema_dictionary["return_structure"] += labelled_output
-                next_schema_dictionary["context_dicts"] += context_dict
-            else:
-                next_schema_dictionary["return_structure"] = []
-                next_schema_dictionary["context_dicts"] = []
-                next_schema_dictionary["return_structure"] += labelled_output
-                next_schema_dictionary["context_dicts"] += context_dict
 
+            labelled_output = root + ": " + output
+            return_dict["output_text"].append(labelled_output)
+            return_dict["context_dicts"].append(context_dict)
             new_seen_nodes.append(root)
 
             for node_id in nodes_to_send_outputs.keys():
@@ -430,8 +424,8 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
             
             ### In the future you may want to change the way this script handles combining 
             ### prompts
-            updated_prompts_dict = updateNodePrompts(nodes_to_send_outputs, schema_dictionary)
-            next_schema_dictionary=removeEdgeIDs(edge_ids_to_remove, updated_prompts_dict)
-        return(runSchema(next_schema_dictionary, seen_nodes=new_seen_nodes, context_dict=context_dict))
-
+                updated_prompts_dict = updateNodePrompts(nodes_to_send_outputs, schema_dictionary)
+                next_schema_dictionary=removeEdgeIDs(edge_ids_to_remove, updated_prompts_dict)
+        return(runSchema(next_schema_dictionary, seen_nodes=new_seen_nodes, context_dict=context_dict, return_dict = return_dict))
+                        
 # %%
