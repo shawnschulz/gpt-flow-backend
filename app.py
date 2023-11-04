@@ -3,7 +3,6 @@ from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS #comment this on deployment
 from api.HelloApiHandler import HelloApiHandler
 from flask import request
-#from chatbot_controller import *
 import json as js
 from pathlib import Path
 from optparse import OptionParser
@@ -21,21 +20,17 @@ def schema_json_handler():
     request_data = request.json
     print(request_data)
     promptData = request_data
-    #it's working!
     print("testing testing")
     print(promptData)
-    #all we really need to do next is run this through the python script already made, then somehow send it back to
-    #the react server to display with a GET method. i'm thinking we just include aspects of the schema script in the
-    #api backend. we should write the outputs of the schema to somewhere in the url, and have the front end send
-    #get requests to those URLs, check some variable signifying whether the output is ready or not
-
-##This was my attempt at doing a json database earlier lol, just ignore this for now
-#    Path('./json_database/temp_schema.json').touch()
-#    with open('./json_database/temp_schema.json', "w") as outfile:
-#        js.dump(promptData, outfile)
     return runSchema(promptData)
 @app.route('/<user_id>/chatbot/response', methods=['POST'])
 
+#should handle context jsons also, but i am so lazy lol
+@app.route('/message_json_handler', methods=['POST'])
+def message_json_handler():
+    request_data = request.json
+    print(request_data)
+    return ask_lora(request_data)
 
 ## Desktop model path
 #path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
