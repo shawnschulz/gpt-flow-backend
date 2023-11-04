@@ -14,9 +14,9 @@ from llama_cpp import Llama
 #Desktop model path: "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
 #laptop model path: 
 def ask_lora(prompt):
-    path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-f16.bin" 
+    path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
     llm = Llama(model_path=path_to_model)
-    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=1, echo=True)
+    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=16, echo=True)
     print("DEBUG: the output of ask-lora before subsetting is:")
     print(output)
     response = output["choices"][0]["text"].split("Output: ",1)[1]
