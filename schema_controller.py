@@ -1,37 +1,20 @@
-# %%
-#from transformers import pipeline
 from optparse import OptionParser
-#from transformers import AutoModelForCausalLM, AutoTokenizer
 import os
 import json
 import sys
 from llama_cpp import Llama
-# %%
-#only thing left to do is receive this json file as an input from the server and make sure
-#running the LLM works :), will eventually want to add some other options for LLMs to run
-#and also listen for that input.
 
 #Desktop model path: "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
-#laptop model path: 
 def ask_lora(prompt):
     path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
     llm = Llama(model_path=path_to_model)
-    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=16, echo=True)
+    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=32, echo=True)
     print("DEBUG: the output of ask-lora before subsetting is:")
     print(output)
     response = output["choices"][0]["text"].split("Output: ",1)[1]
-    #save the model again (this could either be extremely important or useless idk lol)
-    #f2 = open(memory_dir + 'dataset.json', 'r+b')
-    #f2.write(bytes(str(output), 'utf-8'))
     print(response)
     return(response)
-# %%
-### Should probably update this to use a python class, so that when we add new node types
-### we can reuse some methods without having to minor edits to make them compatible with
-### new node types. This is okay for now tho, since that will require thinking some new logic for
-### how the schema deals with sending outputs of nodes to nodes of different types
 
-# %%
 def schemaListToDictionary(schemaList):
     '''
         Takes nodes or edges list and makes a dictionary you can index list elements using the ID, probably
@@ -304,7 +287,12 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
     '''
     ### Should listen here to see if user hit the pause/stop button, and if they did pause or stop the execution of the code
     #listenForInput()
-
+    ##Just returns the prompt immediately if it got just a prompt in the JSON.
+    if 'nodes' not in schema_dictionary.keys() and "prompt" in schema_dictionary.keys():
+        print("Returning just the prompted info")
+        returned_text = ask_lora(schema_dictionary["prompt"])
+        return_dict = {"response":returned_text}
+        return(return_dict)
     roots = findRoots(schema_dictionary)
     nodes_to_send_outputs={}
     next_schema_dictionary=schema_dictionary.copy()

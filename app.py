@@ -30,7 +30,10 @@ def schema_json_handler():
 def message_json_handler():
     request_data = request.json
     print(request_data)
-    return ask_lora(request_data)
+    promptData = request_data
+    print("testing")
+    print(promptData)
+    return ask_alpaca(promptData["prompt"])
 
 ## Desktop model path
 #path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
@@ -40,27 +43,40 @@ def message_json_handler():
 #path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-q4_0.bin"
 
 
-def ask_alpaca(prompt, model_path="/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-f16.bin" ):
+def ask_alpaca(prompt, model_path="./model/ggml-model-q4_0.bin", context_json="/home/shawn/Programming/backend-gpt-flow/context.json"):
     llm = Llama(model_path=model_path)
-    prompt_string = prompt["Instruction"]
-#   contextual_prompt = contents + "\n The previous text was just context and is your memory, do not answer anything enclosed in []. Please answer the following question only Q: " + prompt           
-    output = llm("Q: " + prompt_string + " A:", max_tokens=1, stop=["Q:", "\n"], echo=True)
-    #save additional context
-    #save the model again (this could either be extremely important or useless idk lol)
-    #f2 = open(memory_dir + 'dataset.json', 'r+b')
-    #f2.write(bytes(str(output), 'utf-8'))
+    prompt_string = prompt
+    context_dict = read_dict_from_json(context_json)
+    context_string = json.dumps(context_dict)
+    output = llm("Context" + context_string +  " Q: " + prompt_string + " A:", max_tokens=64, stop=["Q:", "\n"], echo=True)
     print(output) 
     return_text = output["choices"][0]["text"].split("A: ",1)[1]
     print(return_text)
     return_dict = {}
+    if "listed_context" in context_dict.keys():
+        context_dict["listed_context"].append(return_text)
+    else:
+        context_dict["listed_context"] = []
+        context_dict["listed_context"].append(return_text)
+    write_dict_to_json(context_dict, context_json)
     return_dict["Response"] = return_text
-    return(output)
+    return(return_dict)
 
 def chatbot_post():
     if flask.request.method == 'POST':
         chatbot_prompt = request.args.get('chatbot_prompt')
         return(ask_lora(chatbot_prompt))
 
+def read_dict_from_json(file_path): 
+    with open(file_path) as json_file:
+        data = json.load(json_file)
+    return(data)     
+
+def write_dict_to_json(json_dict, file_path):
+    print(json_dict)
+    print(file_path)
+    with open(file_path, 'w') as json_file:
+        json.dump(json_dict, json_file)
 
 if __name__ == '__main__':
     # run app in debug mode on port 4269 <- may need to change to diff port later
