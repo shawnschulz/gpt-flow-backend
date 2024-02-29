@@ -35,14 +35,8 @@ def message_json_handler():
     print(promptData)
     return ask_alpaca(promptData["prompt"])
 
-## Desktop model path
-#path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
 
-## Laptop model path
-
-#path_to_model= "/Users/shawnschulz/Programming/llama.cpp/models/7B/ggml-model-q4_0.bin"
-
-
+## must change model_path as needed for testing on local system
 def ask_alpaca(prompt, model_path="./model/ggml-model-q4_0.bin", context_json="/home/shawn/Programming/backend-gpt-flow/context.json"):
     llm = Llama(model_path=model_path)
     prompt_string = prompt
