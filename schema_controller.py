@@ -1,19 +1,17 @@
-from optparse import OptionParser
-import os
 import json
-import sys
-from llama_cpp import Llama
+from ollama import chat
+from ollama import ChatResponse
 
-#Desktop model path: "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
-def ask_lora(prompt):
-    path_to_model= "/home/shawn/Programming/ai_stuff/llama.cpp/models/30B/ggml-model-q4_0.bin" 
-    llm = Llama(model_path=path_to_model)
-    output = llm("Instruction: " + prompt + "Output: ", stop=['Instruction'], max_tokens=32, echo=True)
-    print("DEBUG: the output of ask-lora before subsetting is:")
-    print(output)
-    response = output["choices"][0]["text"].split("Output: ",1)[1]
-    print(response)
-    return(response)
+def prompt_deepseek(prompt, model_name="deepseek-r1"):
+    response: ChatResponse = chat(model=model_name, messages=[
+      {
+        'role': 'user',
+        'content': prompt,
+      },
+    ])
+    print(response['message']['content'])
+# or access fields directly from the response object
+    return(response.message.content)
 
 def schemaListToDictionary(schemaList):
     '''
@@ -189,7 +187,7 @@ def runTextLLM(text, node_id = "unknown", context_dict = {}, context_fp = './con
     '''
     #for testing just return a string
     print("Running LLM based on text")
-    output= ask_lora(text)
+    output= prompt_deepseek(text)
     node_id_to_add = enforceDictUniqueID(node_id, context_dict)
     context_dict[node_id_to_add] = output
     with open(context_fp, "w") as outfile:
@@ -211,7 +209,7 @@ def runNodeLLM(node_id, schema_dictionary, context_dict={}, context_fp = './cont
                 prompt += node['data'][key]
                 prompt += " \n"
             # run LLM on prompt, note that this output will need to be sent over web somehow
-    output = ask_lora(prompt)
+    output = prompt_deepseek(prompt)
     node_id_to_add = enforceDictUniqueID(node_id, context_dict)
     context_dict[node_id_to_add] = output
     with open(context_fp, "w") as outfile:
@@ -290,9 +288,15 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
     ##Just returns the prompt immediately if it got just a prompt in the JSON.
     if 'nodes' not in schema_dictionary.keys() and "prompt" in schema_dictionary.keys():
         print("Returning just the prompted info")
-        returned_text = ask_lora(schema_dictionary["prompt"])
+        returned_text = prompt_deepseek(schema_dictionary["prompt"])
         return_dict = {"response":returned_text}
         return(return_dict)
+    if len(schema_dictionary.keys()) == 1:
+        print("Returning just the prompted info")
+        returned_text = prompt_deepseek(schema_dictionary["prompt"])
+        return_dict = {"response":returned_text}
+        return(return_dict)
+
     roots = findRoots(schema_dictionary)
     nodes_to_send_outputs={}
     next_schema_dictionary=schema_dictionary.copy()

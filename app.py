@@ -1,14 +1,8 @@
 from flask import Flask, send_from_directory
 from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS #comment this on deployment
-from api.HelloApiHandler import HelloApiHandler
 from flask import request
-import json as js
-from pathlib import Path
-from optparse import OptionParser
-import sys
 import json
-from llama_cpp import Llama
 from schema_controller import * 
 
 app = Flask(__name__)
@@ -33,33 +27,14 @@ def message_json_handler():
     promptData = request_data
     print("testing")
     print(promptData)
-    return ask_alpaca(promptData["prompt"])
+    return prompt_deepseek(promptData["prompt"])
 
 
-## must change model_path as needed for testing on local system
-def ask_alpaca(prompt, model_path="./model/ggml-model-q4_0.bin", context_json="/home/shawn/Programming/backend-gpt-flow/context.json"):
-    llm = Llama(model_path=model_path)
-    prompt_string = prompt
-    context_dict = read_dict_from_json(context_json)
-    context_string = json.dumps(context_dict)
-    output = llm("Context" + context_string +  " Q: " + prompt_string + " A:", max_tokens=64, stop=["Q:", "\n"], echo=True)
-    print(output) 
-    return_text = output["choices"][0]["text"].split("A: ",1)[1]
-    print(return_text)
-    return_dict = {}
-    if "listed_context" in context_dict.keys():
-        context_dict["listed_context"].append(return_text)
-    else:
-        context_dict["listed_context"] = []
-        context_dict["listed_context"].append(return_text)
-    write_dict_to_json(context_dict, context_json)
-    return_dict["Response"] = return_text
-    return(return_dict)
 
 def chatbot_post():
     if flask.request.method == 'POST':
         chatbot_prompt = request.args.get('chatbot_prompt')
-        return(ask_lora(chatbot_prompt))
+        return(prompt_deepseek(chatbot_prompt))
 
 def read_dict_from_json(file_path): 
     with open(file_path) as json_file:
