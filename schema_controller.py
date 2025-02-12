@@ -179,7 +179,7 @@ def enforceDictUniqueID(id, dictionary):
             return(new_id)
     return(id)
 # %%
-def runTextLLM(text, node_id = "unknown", context_dict = {}, context_fp = './context.json'):
+def runTextLLM(text): 
     '''
         much simpler function that only runs LLM using text, not based on node
         outputs context json to context_fp, should figure out a good place for this in
@@ -188,10 +188,7 @@ def runTextLLM(text, node_id = "unknown", context_dict = {}, context_fp = './con
     #for testing just return a string
     print("Running LLM based on text")
     output= prompt_deepseek(text)
-    node_id_to_add = enforceDictUniqueID(node_id, context_dict)
-    context_dict[node_id_to_add] = output
-    with open(context_fp, "w") as outfile:
-        json.dump(context_dict, outfile)
+    context_dict = {}
     return output, context_dict
 
 def runNodeLLM(node_id, schema_dictionary, context_dict={}, context_fp = './context.json'):
@@ -249,7 +246,7 @@ def addReturnElementsToSchemaDictionary(schema_dictionary, labelled_output, cont
             schema_dictionary["context_dicts"] += context_dict
         return schema_dictionary
 # %%
-def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="", diverging_loop_stack=[], seen_nodes=[], context_dict = {}, return_dict = {"output_text":[], "context_dicts":[]}):
+def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="", diverging_loop_stack=[], seen_nodes=[], context_dict = {}, return_dict = {"output_text":[], "context_dicts":[]}, character_limit=50000, loop_depth=10000):
     '''
         Take a schema and run the flow. Mutates schema dictionary and removes edges not part of a loop, edges within or downstream of loops are
         preserved.
@@ -283,15 +280,12 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
         UPDATE: have to update to return some whole structure with a series of outputs that can be used by frontend to 
         populate chatbot output box, thinking we can just add it to the schema dict and return
     '''
+
+
     ### Should listen here to see if user hit the pause/stop button, and if they did pause or stop the execution of the code
     #listenForInput()
     ##Just returns the prompt immediately if it got just a prompt in the JSON.
     if 'nodes' not in schema_dictionary.keys() and "prompt" in schema_dictionary.keys():
-        print("Returning just the prompted info")
-        returned_text = prompt_deepseek(schema_dictionary["prompt"])
-        return_dict = {"response":returned_text}
-        return(return_dict)
-    if len(schema_dictionary.keys()) == 1:
         print("Returning just the prompted info")
         returned_text = prompt_deepseek(schema_dictionary["prompt"])
         return_dict = {"response":returned_text}
@@ -332,9 +326,27 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
             # with the prompt a node has typed into it
             node_prompt = received_input + retrieveNodePrompt(current_node, schema_dictionary)
             print("the node prompt is: " + node_prompt)
-            output, context_dict = runTextLLM(node_prompt, context_dict)
-            next_received_input = output + " "
-            outputToChatbot(output)
+            output, context_dict = runTextLLM(node_prompt)
+            if output != None:
+                labelled_output = next_node_in_loop + ": " + output
+            else:
+                labelled_output = ""
+            return_dict["output_text"].append(labelled_output)
+            if output != None:
+                character_limit -= len(output)
+            loop_depth -= 1
+            print("The character limit is currently: " + str(character_limit))
+            print("The loop depth is currently: " + str(10000 - loop_depth))
+            print("Return dict:")
+            print(return_dict)
+
+            if character_limit <= 0 or loop_depth <= 0:
+                print("Maximum character limit or loop depth reached")
+                return(return_dict)
+            if output != None:
+                next_received_input = output + "\n"
+            else:
+                next_received_input = "\n"
             for edge in next_schema_dictionary['edges']:
                 if edge['source'] == current_node:
                     edge_id = edge['id']
@@ -349,7 +361,6 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
                 print(node_id)
                 print("check loop is:")
                 print(checkLoop(node_id, schema_dictionary))
-                breakpoint()
 
                 if checkLoop(node_id, schema_dictionary):
                     next_loops.append(node_id)
@@ -361,26 +372,26 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
             for terminal_id in next_terminal:
                 print("in terminal")
                 print("terminal id is: " + terminal_id)
-                runSchema(schema_dictionary, next_node_in_loop=terminal_id, received_input=next_received_input, diverging_loop_stack=diverging_loop_stack)
+                return(runSchema(schema_dictionary, next_node_in_loop=terminal_id, received_input=next_received_input, diverging_loop_stack=diverging_loop_stack, character_limit=character_limit, return_dict=return_dict))
             if len(next_loops) == 1:
                 print('detected len as 1')
-                runSchema(schema_dictionary, next_node_in_loop=next_loops[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack)
+                return(runSchema(schema_dictionary, next_node_in_loop=next_loops[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack, character_limit=character_limit, return_dict=return_dict))
             elif len(next_loops) > 1:
                 #want to make sure we run different diverging loops in order 
                 if len(diverging_loop_stack) == 0:
                     #if this is the first time seeing the diverging loop, make our queued loops the diverging
                     #loop stack
-                    runSchema(schema_dictionary, next_node_in_loop=next_loops[0], received_input=next_received_input, diverging_loop_stack=next_loops)
+                    return(runSchema(schema_dictionary, next_node_in_loop=next_loops[0], received_input=next_received_input, diverging_loop_stack=next_loops, character_limit=character_limit, loop_depth=loop_depth, return_dict=return_dict))
                 elif len(diverging_loop_stack) > 0:
                     if set(next_loops) != set(diverging_loop_stack):
                         diverging_loop_stack = next_loops
-                        runSchema(schema_dictionary, next_node_in_loop=diverging_loop_stack[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack)
+                        return(runSchema(schema_dictionary, next_node_in_loop=diverging_loop_stack[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack,character_limit=character_limit, loop_depth=loop_depth, return_dict=return_dict))
                     elif set(next_loops) == set(diverging_loop_stack):
                         first = diverging_loop_stack.pop(0)
                         diverging_loop_stack.append(first)
                         print("THISIS THE NEW STACK")
                         print(diverging_loop_stack)
-                        runSchema(schema_dictionary, next_node_in_loop=diverging_loop_stack[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack, context_dict=context_dict)
+                        return(runSchema(schema_dictionary, next_node_in_loop=diverging_loop_stack[0], received_input=next_received_input, diverging_loop_stack=diverging_loop_stack, context_dict=context_dict,character_limit=character_limit, loop_depth=loop_depth, return_dict=return_dict))
 
     else:                    
         #Recursive case: Schema dictionary has roots. Get the outputs from the source node, make 
@@ -408,7 +419,12 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
 
             labelled_output = root + ": " + output
             return_dict["output_text"].append(labelled_output)
-            return_dict["context_dicts"].append(context_dict)
+            if output != None:
+                character_limit -= len(output)
+            loop_depth -= 1
+            if character_limit <= 0 or loop_depth <= 0:
+                print("Maximum character limit or loop depth reached")
+                return(return_dict)
             new_seen_nodes.append(root)
 
             for node_id in nodes_to_send_outputs.keys():
@@ -418,6 +434,6 @@ def runSchema(schema_dictionary, next_node_in_loop = "start", received_input="",
             ### prompts
                 updated_prompts_dict = updateNodePrompts(nodes_to_send_outputs, schema_dictionary)
                 next_schema_dictionary=removeEdgeIDs(edge_ids_to_remove, updated_prompts_dict)
-        return(runSchema(next_schema_dictionary, seen_nodes=new_seen_nodes, context_dict=context_dict, return_dict = return_dict))
+        return(runSchema(next_schema_dictionary, seen_nodes=new_seen_nodes, context_dict=context_dict, return_dict = return_dict, character_limit=character_limit, loop_depth=loop_depth))
                         
 # %%
