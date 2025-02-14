@@ -18,6 +18,7 @@ RUN 	pip install Flask && \
 
 RUN curl -fsSL https://ollama.com/install.sh | sh
 RUN pip install ollama
+RUN ollama pull deepseek-r1:14b
 
 RUN useradd -ms /bin/bash gworkers
 RUN mkdir /gworkers \ 
@@ -26,4 +27,4 @@ USER gworkers
 WORKDIR /gworkers
 RUN git clone https://github.com/shawnschulz/gpt-flow-backend.git  && \
 	cd gpt-flow-backend
-#RUN gunicorn -D -w 4 'app:app'
+RUN gunicorn -D -w 4 'app:app'
