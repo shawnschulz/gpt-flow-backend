@@ -20,9 +20,10 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 RUN pip install ollama
 
 RUN useradd -ms /bin/bash gworkers
-RUN mkdir /gworkers&&chown gworkers 
+RUN mkdir /gworkers \ 
+	&& chown -R gworkers:gworkers /gworkers 
 USER gworkers
 WORKDIR /gworkers
 RUN git clone https://github.com/shawnschulz/gpt-flow-backend.git  && \
 	cd gpt-flow-backend
-RUN gunicorn -D -w 4 'app:app'
+#RUN gunicorn -D -w 4 'app:app'
